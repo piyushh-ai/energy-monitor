@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Energy Monitor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#E8ECF0; --panel:#F7F9FA; --ink:#101B26; --muted:#5B6B7A; --line:#D3DAE1;
+  --drum:#13202C; --drum-ink:#EAF0F5; --amber:#F5A524; --live:#14996B; --off:#D0453F;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --num:"Barlow Condensed","Arial Narrow",Impact,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#0C141C; --panel:#141F2A; --ink:#E7EDF2; --muted:#93A3B2; --line:#26364A; --drum:#070D13;}
+}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--ink);font:400 16px/1.5 var(--sans);min-height:100vh}
+.wrap{max-width:960px;margin:0 auto;padding:20px 16px 48px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px}
+h1{font-size:1.35rem;font-weight:600}
+.pill{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;background:var(--panel);border:1px solid var(--line);font-size:.85rem;font-weight:500}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--muted)}
+.live .dot{background:var(--live);animation:pulse 2s infinite}
+.offline .dot{background:var(--off)}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(20,153,107,.5)}70%,100%{box-shadow:0 0 0 8px rgba(20,153,107,0)}}
+.banner{display:none;background:rgba(208,69,63,.12);border:1px solid var(--off);color:var(--ink);padding:10px 14px;border-radius:10px;margin-bottom:16px;font-size:.92rem}
+.banner.show{display:block}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:0 1px 2px rgba(16,27,38,.06)}
+.hero{padding:24px 20px}
+.label{font-size:.9rem;color:var(--muted);font-weight:500}
+.odo{display:flex;gap:4px;margin:14px 0 6px;flex-wrap:nowrap;align-items:center}
+.drum{width:clamp(34px,11vw,64px);height:clamp(52px,17vw,96px);background:var(--drum);border-radius:6px;overflow:hidden;position:relative;box-shadow:inset 0 8px 10px -6px rgba(0,0,0,.7),inset 0 -8px 10px -6px rgba(0,0,0,.7)}
+.drum .strip{transition:transform .8s cubic-bezier(.2,.8,.2,1)}
+.drum span{display:block;height:clamp(52px,17vw,96px);line-height:clamp(52px,17vw,96px);text-align:center;font:600 clamp(38px,12.5vw,72px)/clamp(52px,17vw,96px) var(--num);color:var(--drum-ink)}
+.drum.last{outline:2px solid var(--amber);outline-offset:1px}
+.frac{font:600 clamp(24px,7vw,40px) var(--num);color:var(--muted);margin-left:4px}
+.sub{color:var(--muted);font-size:.85rem}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:14px}
+@media (min-width:720px){.grid{grid-template-columns:repeat(4,1fr)}}
+.stat .v{font:600 clamp(34px,8vw,48px)/1.1 var(--num);margin-top:6px}
+.stat .u{font-size:.8rem;color:var(--muted)}
+.total{border-color:var(--amber)}
+.row{display:grid;gap:14px;margin-top:14px}
+@media (min-width:720px){.row{grid-template-columns:1fr 1fr}}
+dl{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;margin-top:8px;font-size:.92rem}
+dt{color:var(--muted)}
+button{font:500 1rem var(--sans);cursor:pointer;border-radius:10px;padding:11px 18px;border:1px solid var(--line);background:var(--panel);color:var(--ink)}
+button.primary{background:var(--amber);border-color:var(--amber);color:#1B1300;font-weight:600}
+button:hover{filter:brightness(.96)}
+button:focus-visible,input:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+.settings p{margin:6px 0 14px;font-size:.92rem;color:var(--muted);max-width:60ch}
+dialog{border:1px solid var(--line);border-radius:16px;padding:22px;background:var(--panel);color:var(--ink);width:min(420px,92vw);margin:auto}
+dialog::backdrop{background:rgba(8,14,20,.55)}
+dialog[open]{animation:pop .18s ease-out}
+@keyframes pop{from{transform:scale(.96);opacity:0}}
+dialog h2{font-size:1.1rem;margin-bottom:6px}
+dialog p{font-size:.9rem;color:var(--muted)}
+input{width:100%;margin-top:14px;padding:12px;font:600 1.4rem var(--num);letter-spacing:.04em;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.msg{margin-top:10px;font-size:.88rem;min-height:1.3em}
+.msg.err{color:var(--off)} .msg.warn{color:#9A6400;background:rgba(245,165,36,.16);padding:8px 10px;border-radius:8px}
+@media (prefers-color-scheme:dark){.msg.warn{color:var(--amber)}}
+.actions{display:flex;justify-content:flex-end;gap:10px;margin-top:14px}
+.skel .v,.skel .drum{animation:sh 1.2s infinite alternate}
+@keyframes sh{from{opacity:.35}to{opacity:.8}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>⚡ Energy Monitor</h1>
+    <span id="status" class="pill"><span class="dot"></span><span id="statusText">Connecting</span></span>
+  </header>
+
+  <div id="banner" class="banner" role="alert"></div>
+
+  <main class="skel" id="main">
+    <section class="card hero" aria-labelledby="mrLabel">
+      <div id="mrLabel" class="label">Current Meter Reading (kWh)</div>
+      <div class="odo" id="odo" aria-live="polite"></div>
+      <div class="sub" id="readingHint">Matches the number on your physical meter</div>
+    </section>
+
+    <section class="grid" aria-label="Consumption">
+      <div class="card stat"><div class="label">Today</div><div class="v" id="today">0</div><div class="u">units</div></div>
+      <div class="card stat"><div class="label">This Week</div><div class="v" id="week">0</div><div class="u">units since Monday</div></div>
+      <div class="card stat"><div class="label">This Month</div><div class="v" id="month">0</div><div class="u">units</div></div>
+      <div class="card stat total"><div class="label">Total Monitored Usage</div><div class="v" id="total">0</div><div class="u">units since monitoring began</div></div>
+    </section>
+
+    <div class="row">
+      <section class="card">
+        <div class="label">Device</div>
+        <dl>
+          <dt>Device ID</dt><dd id="deviceId">ESP32-001</dd>
+          <dt>Last updated</dt><dd id="updated">Loading…</dd>
+          <dt>Last unit received</dt><dd id="lastUnit">Loading…</dd>
+        </dl>
+      </section>
+      <section class="card settings">
+        <div class="label">Meter Settings</div>
+        <p>Enter the reading printed on your meter today. It is a starting point and is not counted as usage.</p>
+        <button class="primary" id="openModal">Set Current Meter Reading</button>
+      </section>
+    </div>
+  </main>
+</div>
+
+<dialog id="modal">
+  <form id="form" method="dialog" novalidate>
+    <h2>Set Current Meter Reading</h2>
+    <p>Type the number shown on the meter right now, for example 3847.</p>
+    <input id="readingInput" type="number" inputmode="decimal" min="0" step="any" placeholder="3847" required aria-label="Meter reading">
+    <div id="modalMsg" class="msg"></div>
+    <div class="actions">
+      <button type="button" id="cancelBtn">Cancel</button>
+      <button type="submit" class="primary" id="saveBtn">Save reading</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const TZ = 'Asia/Kolkata';
+  const MIN_DIGITS = 5;
+  let firstLoad = true, offline = false, shown = {}, confirmMode = false;
+
+  // ---- Odometer -----------------------------------------------------
+  function buildOdo(digits) {
+    const odo = $('odo');
+    odo.innerHTML = '';
+    for (let i = 0; i < digits; i++) {
+      const d = document.createElement('div');
+      d.className = 'drum' + (i === digits - 1 ? ' last' : '');
+      d.innerHTML = '<div class="strip">' + [0,1,2,3,4,5,6,7,8,9].map(n => `<span>${n}</span>`).join('') + '</div>';
+      odo.appendChild(d);
+    }
+    const f = document.createElement('span'); f.className = 'frac'; f.id = 'frac'; odo.appendChild(f);
+  }
+  function setReading(value) {
+    const whole = Math.floor(value);
+    const str = String(whole).padStart(MIN_DIGITS, '0');
+    if ($('odo').querySelectorAll('.drum').length !== str.length) buildOdo(str.length);
+    $('odo').querySelectorAll('.strip').forEach((s, i) => {
+      s.style.transform = `translateY(-${Number(str[i]) * 10}%)`;
+    });
+    const frac = value - whole;
+    $('frac').textContent = frac > 0 ? '.' + String(Math.round(frac * 100)).padStart(2, '0').replace(/0+$/, '') : '';
+    $('odo').setAttribute('aria-label', `Meter reading ${value}`);
+  }
+
+  // ---- Number tween -------------------------------------------------
+  function tween(id, to) {
+    const el = $(id), from = shown[id] ?? 0;
+    shown[id] = to;
+    if (from === to) { el.textContent = to; return; }
+    const t0 = performance.now(), dur = 600;
+    const step = now => {
+      const p = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+      el.textContent = Math.round(from + (to - from) * e);
+      if (p < 1) requestAnimationFrame(step); else el.textContent = to;
+    };
+    requestAnimationFrame(step);
+  }
+
+  const fmt = iso => iso ? new Date(iso).toLocaleString('en-IN', { timeZone: TZ, dateStyle: 'medium', timeStyle: 'medium' }) : 'No units received yet';
+
+  // ---- Status -------------------------------------------------------
+  function setStatus(isLive, msg) {
+    $('status').className = 'pill ' + (isLive ? 'live' : 'offline');
+    $('statusText').textContent = isLive ? 'Live' : 'Offline';
+    const b = $('banner');
+    b.textContent = msg || '';
+    b.classList.toggle('show', !isLive);
+  }
+
+  // ---- Data loop ----------------------------------------------------
+  async function load() {
+    try {
+      const res = await fetch('/api/get-data', { cache: 'no-store' });
+      if (!res.ok) throw new Error('Server responded with ' + res.status);
+      const d = await res.json();
+      if (!d.success) throw new Error(d.message || 'Unexpected response');
+
+      setReading(d.currentMeterReading);
+      tween('today', d.todayUnits); tween('week', d.weekUnits);
+      tween('month', d.monthUnits); tween('total', d.totalMonitoredUnits);
+      $('deviceId').textContent = d.deviceId;
+      $('updated').textContent = fmt(d.lastUpdated);
+      $('lastUnit').textContent = fmt(d.lastUnitAt);
+      $('readingHint').textContent = d.readingSet
+        ? 'Matches the number on your physical meter'
+        : 'Starting reading not set yet. Use Meter Settings below.';
+      $('main').classList.remove('skel');
+      firstLoad = false;
+      setStatus(true);
+    } catch (err) {
+      setStatus(false, 'Cannot reach the server. Showing the last known values; retrying every 5 seconds. (' + err.message + ')');
+    }
+  }
+  buildOdo(MIN_DIGITS);
+  load();
+  setInterval(load, 5000);
+
+  // ---- Modal --------------------------------------------------------
+  const modal = $('modal'), input = $('readingInput'), msg = $('modalMsg'), save = $('saveBtn');
+  function resetModal() { confirmMode = false; msg.className = 'msg'; msg.textContent = ''; save.textContent = 'Save reading'; }
+  $('openModal').onclick = () => { resetModal(); input.value = ''; modal.showModal(); input.focus(); };
+  $('cancelBtn').onclick = () => modal.close();
+  input.addEventListener('input', resetModal);
+
+  $('form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const val = input.value.trim();
+    if (val === '' || !Number.isFinite(Number(val)) || Number(val) < 0) {
+      msg.className = 'msg err'; msg.textContent = 'Enter a number that is 0 or greater.'; return;
+    }
+    save.disabled = true;
+    try {
+      const res = await fetch('/api/set-reading', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deviceId: 'ESP32-001', reading: Number(val), confirm: confirmMode })
+      });
+      const d = await res.json();
+      if (res.status === 409 && d.requiresConfirmation) {
+        confirmMode = true;
+        msg.className = 'msg warn';
+        msg.textContent = `This is lower than the current reading (${d.currentReading}). Meter readings only go up, so this is usually a typo. Save anyway?`;
+        save.textContent = 'Lower the reading';
+      } else if (!res.ok) {
+        msg.className = 'msg err'; msg.textContent = d.message || 'Could not save the reading.';
+      } else {
+        modal.close(); await load();
+      }
+    } catch {
+      msg.className = 'msg err'; msg.textContent = 'Cannot reach the server. Try again in a moment.';
+    } finally { save.disabled = false; }
+  });
+})();
+</script>
+</body>
+</html>
