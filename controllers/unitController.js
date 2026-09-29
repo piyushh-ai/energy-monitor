@@ -123,4 +123,66 @@ exports.getData = async (req, res) => {
   }
 };
 
-exports._periodStarts = periodStarts;
+
+// ===================== HEARTBEAT =====================
+// ESP32 har 10 sec me ye call karega -> "main zinda hu" wala ping
+exports.heartbeat = async (req, res) => {
+	  try {
+	  	    const { deviceId } = req.body;
+
+	  	        if (!deviceId) {
+	  	        	      return res.status(400).json({ ok: false, message: 'deviceId required' });
+	  	        	          }
+
+	  	        	              await Device.findOneAndUpdate(
+	  	        	              	      { deviceId },
+	  	        	              	            { lastSeen: new Date() },
+	  	        	              	                  { upsert: true, new: true }
+	  	        	              	                      );
+
+	  	        	              	                          return res.status(200).json({ ok: true });
+	  	        	              	                            } catch (err) {
+	  	        	              	                            	    console.error('Heartbeat error:', err.message);
+	  	        	              	                            	        return res.status(500).json({ ok: false, message: 'Server error' });
+	  	        	              	                            	          }
+	  	        	              	                            	          };
+
+	  	        	              	                            	          // ===================== DEVICE STATUS =====================
+// ===================== DEVICE STATUS =====================
+// Frontend ye call karega poll karke -> device online hai ya nahi check
+exports.getDeviceStatus = async (req, res) => {
+    try {
+        const { deviceId } = req.params;
+
+        const device = await Device.findOne({ deviceId });
+
+        if (!device || !device.lastSeen) {
+            return res.status(200).json({
+                online: false,
+                lastSeen: null,
+                secondsSinceLastSeen: null
+            });
+        }
+
+        const secondsSinceLastSeen =
+            (Date.now() - new Date(device.lastSeen).getTime()) / 1000;
+
+        const online = secondsSinceLastSeen <= 30;
+
+        return res.status(200).json({
+            online,
+            lastSeen: device.lastSeen,
+            secondsSinceLastSeen: Math.floor(secondsSinceLastSeen)
+        });
+
+    } catch (err) {
+        console.error('Device status error:', err.message);
+
+        return res.status(500).json({
+            online: false,
+            message: 'Server error'
+        });
+    }
+};
+
+// Frontend ye call karega poll karke -> device online hai ya nahi check karne ke liye
