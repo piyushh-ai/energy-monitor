@@ -134,7 +134,7 @@ exports.heartbeat = async (req, res) => {
 	  	        	      return res.status(400).json({ ok: false, message: 'deviceId required' });
 	  	        	          }
 
-	  	        	              await Device.findOneAndUpdate(
+	  	        	              await Meter.findOneAndUpdate(
 	  	        	              	      { deviceId },
 	  	        	              	            { lastSeen: new Date() },
 	  	        	              	                  { upsert: true, new: true }
@@ -154,7 +154,7 @@ exports.getDeviceStatus = async (req, res) => {
     try {
         const { deviceId } = req.params;
 
-        const device = await Device.findOne({ deviceId });
+        const device = await Meter.findOne({ deviceId });
 
         if (!device || !device.lastSeen) {
             return res.status(200).json({
