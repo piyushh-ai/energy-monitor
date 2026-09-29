@@ -197,14 +197,45 @@ input{width:100%;margin-top:14px;padding:12px;font:600 1.4rem var(--num);letter-
         : 'Starting reading not set yet. Use Meter Settings below.';
       $('main').classList.remove('skel');
       firstLoad = false;
-      setStatus(true);
     } catch (err) {
       setStatus(false, 'Cannot reach the server. Showing the last known values; retrying every 5 seconds. (' + err.message + ')');
+    }
+  }
+  async function loadStatus() {
+    try {
+      const res = await fetch('/api/device-status/ESP32-001', {
+        cache: 'no-store'
+      });
+
+      if (!res.ok) {
+        throw new Error('Status API error ' + res.status);
+      }
+
+      const d = await res.json();
+
+      const deviceStatus = $('deviceStatus');
+
+      if (d.online) {
+        deviceStatus.textContent = 'Connected';
+        deviceStatus.className = 'device-status online';
+        setStatus(true);
+      } else {
+        deviceStatus.textContent = 'Not Available';
+        deviceStatus.className = 'device-status offline';
+        setStatus(false, 'ESP32 is offline or has not sent a heartbeat recently.');
+      }
+
+    } catch (err) {
+      $('deviceStatus').textContent = 'Status unavailable';
+      $('deviceStatus').className = 'device-status offline';
+      setStatus(false, 'Unable to check ESP32 status.');
     }
   }
   buildOdo(MIN_DIGITS);
   load();
   setInterval(load, 5000);
+loadStatus();
+setInterval(loadStatus, 5000);
 
   // ---- Modal --------------------------------------------------------
   const modal = $('modal'), input = $('readingInput'), msg = $('modalMsg'), save = $('saveBtn');

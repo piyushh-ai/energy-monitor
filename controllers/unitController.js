@@ -114,7 +114,7 @@ exports.getData = async (req, res) => {
       monthUnits,
       totalMonitoredUnits,
       lastUnitAt: last ? last.createdAt : null,
-      lastUpdated: new Date().toISOString(),
+      lastUpdated: meter.lastSeen ? meter.lastSeen.toISOString() : null,
       timezone: 'Asia/Kolkata'
     });
   } catch (err) {
