@@ -114,7 +114,7 @@ exports.getData = async (req, res) => {
       monthUnits,
       totalMonitoredUnits,
       lastUnitAt: last ? last.createdAt : null,
-      lastUpdated: meter.lastSeen ? meter.lastSeen.toISOString() : null,
+      lastUpdated: meter && meter.lastSeen ? meter.lastSeen.toISOString() : null,
       timezone: 'Asia/Kolkata'
     });
   } catch (err) {
@@ -167,7 +167,7 @@ exports.getDeviceStatus = async (req, res) => {
         const secondsSinceLastSeen =
             (Date.now() - new Date(device.lastSeen).getTime()) / 1000;
 
-        const online = secondsSinceLastSeen <= 30;
+        const online = secondsSinceLastSeen <= 25;
 
         return res.status(200).json({
             online,

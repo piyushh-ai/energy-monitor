@@ -66,6 +66,9 @@ input{width:100%;margin-top:14px;padding:12px;font:600 1.4rem var(--num);letter-
 .skel .v,.skel .drum{animation:sh 1.2s infinite alternate}
 @keyframes sh{from{opacity:.35}to{opacity:.8}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.device-status{font-weight:600}
+.device-status.online{color:var(--live)}
+.device-status.offline{color:var(--off)}
 </style>
 </head>
 <body>
@@ -96,6 +99,7 @@ input{width:100%;margin-top:14px;padding:12px;font:600 1.4rem var(--num);letter-
         <div class="label">Device</div>
         <dl>
           <dt>Device ID</dt><dd id="deviceId">ESP32-001</dd>
+          <dt>Status</dt><dd id="deviceStatus" class="device-status">Checking…</dd>
           <dt>Last updated</dt><dd id="updated">Loading…</dd>
           <dt>Last unit received</dt><dd id="lastUnit">Loading…</dd>
         </dl>
@@ -235,7 +239,7 @@ input{width:100%;margin-top:14px;padding:12px;font:600 1.4rem var(--num);letter-
   load();
   setInterval(load, 5000);
 loadStatus();
-setInterval(loadStatus, 5000);
+setInterval(loadStatus, 3000);
 
   // ---- Modal --------------------------------------------------------
   const modal = $('modal'), input = $('readingInput'), msg = $('modalMsg'), save = $('saveBtn');
