@@ -167,7 +167,7 @@ exports.getDeviceStatus = async (req, res) => {
         const secondsSinceLastSeen =
             (Date.now() - new Date(device.lastSeen).getTime()) / 1000;
 
-        const online = secondsSinceLastSeen <= 25;
+        const online = secondsSinceLastSeen <= 12;
 
         return res.status(200).json({
             online,
